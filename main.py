@@ -1,8 +1,13 @@
+#Text image interpreter
+#By Tim Chinenov
+
 import cv2
 import numpy as np
 from matplotlib import pyplot as plt
 
 
+#function finds the corners given the top,bottom,left,and right
+#maximum pixels
 def findCorners(bound):
     c1 = [bound[3][0],bound[0][1]]
     c2 = [bound[1][0],bound[0][1]]
@@ -10,6 +15,8 @@ def findCorners(bound):
     c4 = [bound[3][0],bound[2][1]]
     return [c1,c2,c3,c4]
 
+#function originally used to fill in cavities
+#faster alternative solution was chosen instead
 # def fillImage(img):
 #     h, w = img.shape[:2]
 #     mask = np.zeros((h+2,w+2),np.uint8)
@@ -42,30 +49,29 @@ if __name__ == "__main__":
 
     #perform gaussian blur (5*5)
     blur = cv2.GaussianBlur(img,(5,5),0)
-    #use Otsu method for global threshold
+    #apply adaptive threshold to image
     th3 = cv2.adaptiveThreshold(img,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY,11,2)
     th3 = cv2.bitwise_not(th3)
+    #Otsu method if preferred
     # ret3,th3 = cv2.threshold(blur,0,255,cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)
     #reassign contours to the filled in image
     contours, heirar = cv2.findContours(th3, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
     #find the rectangle around each contour
-    # for cnt in contours:
     for num in range(0,len(contours)):
-        #if(heirar[0][num][3] == -1):
-        left = tuple(contours[num][contours[num][:,:,0].argmin()][0])
-        right = tuple(contours[num][contours[num][:,:,0].argmax()][0])
-        top = tuple(contours[num][contours[num][:,:,1].argmin()][0])
-        bottom = tuple(contours[num][contours[num][:,:,1].argmax()][0])
-        bndingBx.append([top,right,bottom,left])
+        #make sure contour is for letter and not cavity
+        if(heirar[0][num][3] == -1):
+            left = tuple(contours[num][contours[num][:,:,0].argmin()][0])
+            right = tuple(contours[num][contours[num][:,:,0].argmax()][0])
+            top = tuple(contours[num][contours[num][:,:,1].argmin()][0])
+            bottom = tuple(contours[num][contours[num][:,:,1].argmax()][0])
+            bndingBx.append([top,right,bottom,left])
 
     #find the edges of each bounding box
     for bx in bndingBx:
         corners.append(findCorners(bx))
 
     #draw the countours on thresholded image
-    # total = cv2.drawContours(img, contours[-2], -1, (0,255,0), 2)
     x,y,w,h = cv2.boundingRect(th3)
-    # img = cv2.rectangle(img,(x,y),(x+w,y+h),(0,255,0),2)
     imgplot = plt.imshow(img,'gray')
     #draw the box
     for bx in corners:

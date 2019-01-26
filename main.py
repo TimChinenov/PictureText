@@ -1,6 +1,7 @@
 #Text image interpreter
 #By Tim Chinenov
 import Letter
+#import statistics
 import cv2
 import numpy as np
 from matplotlib import pyplot as plt
@@ -57,7 +58,7 @@ if __name__ == "__main__":
     bndingBx = []#holds bounding box of each countour
     corners = []
 
-    img = cv2.imread('const.png',0) #read image
+    img = cv2.imread('linear.png',0) #read image
 
     #perform gaussian blur (5*5)
     blur = cv2.GaussianBlur(img,(5,5),0)
@@ -101,7 +102,7 @@ if __name__ == "__main__":
         AllLetters.append(newLetter)
     plt.clf()
     #sort letters
-    AllLetters.sort(key=lambda letter: letter.getY());
+    AllLetters.sort(key=lambda letter: letter.getY()+letter.getHeight())
 
     #project the y coordinates of the letters on to
     # the y axis
@@ -118,12 +119,41 @@ if __name__ == "__main__":
         plt.plot(0,c,'ro');
 
     #find distances between coordinates
-    coorDists = 
+    coorDists = [0]
+    for num in range(1,len(prjYCoords)):
+        valCur = prjYCoords[num]
+        valPast = prjYCoords[num-1]
+        coorDists.append(valCur-valPast)
+
+    xvals = range(0,len(coorDists))
+    # xvals = []
+    # for v in range(0,len(coorDists)):
+    #     xvals.append((1.0*v)/len(coorDists))
+    #following list will find median points of division
+    start = 0
+    end = 0
+    meanCoord = sum(coorDists)/len(coorDists)
+    stdCoord = np.std(coorDists)
+    medPoints = []
+    for num in range(0,len(coorDists)):
+        if coorDists[num] > meanCoord + stdCoord and end == 0:
+            start = num
+        if coorDists[num] > meanCoord + stdCoord and start > 0:
+            end = num
+            medPoints.append(start+(end-start)/2.0)
+            start = num
 
 
 
-
-
+    # plt.clf()
+    # plt.plot(xvals, coorDists)
+    # plt.plot(medPoints,[30]*len(medPoints),'ro')
+    # plt.plot(xvals,[sum(coorDists)/len(coorDists)+np.std(coorDists)]*len(coorDists))
+    # plt.show()
+    plt.clf()
+    #
+    for num in range(0,len(medPoints)):
+        plt.plot([0,1000],[medPoints[num],medPoints[num]],'r-')
     imgplot = plt.imshow(img,'gray')
     plt.show()
     cv2.waitKey(0)

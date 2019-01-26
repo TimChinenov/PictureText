@@ -1,6 +1,6 @@
 #Text image interpreter
 #By Tim Chinenov
-
+import Letter
 import cv2
 import numpy as np
 from matplotlib import pyplot as plt
@@ -14,6 +14,18 @@ def findCorners(bound):
     c3 = [bound[1][0],bound[2][1]]
     c4 = [bound[3][0],bound[2][1]]
     return [c1,c2,c3,c4]
+
+# def meanShift1D(points):
+#     #find the minimum and maximum points
+#     minP = min(points)
+#     maxP = max(points)
+#     #number of points
+#     n = len(points)
+#     #bandwidth
+#     h = 0.1
+
+
+
 
 #function originally used to fill in cavities
 #faster alternative solution was chosen instead
@@ -71,14 +83,48 @@ if __name__ == "__main__":
         corners.append(findCorners(bx))
 
     #draw the countours on thresholded image
-    x,y,w,h = cv2.boundingRect(th3)
+    #x,y,w,h = cv2.boundingRect(th3)
     imgplot = plt.imshow(img,'gray')
     #draw the box
+    # for bx in corners:
+    #     plt.plot([bx[0][0],bx[1][0]],[bx[0][1],bx[1][1]],'g-',linewidth=2)
+    #     plt.plot([bx[1][0],bx[2][0]],[bx[1][1],bx[2][1]],'g-',linewidth=2)
+    #     plt.plot([bx[2][0],bx[3][0]],[bx[2][1],bx[3][1]],'g-',linewidth=2)
+    #     plt.plot([bx[3][0],bx[0][0]],[bx[3][1],bx[0][1]],'g-',linewidth=2)
+
+    # Take letters and turn them into objects
+    AllLetters = []
     for bx in corners:
-        plt.plot([bx[0][0],bx[1][0]],[bx[0][1],bx[1][1]],'g-',linewidth=2)
-        plt.plot([bx[1][0],bx[2][0]],[bx[1][1],bx[2][1]],'g-',linewidth=2)
-        plt.plot([bx[2][0],bx[3][0]],[bx[2][1],bx[3][1]],'g-',linewidth=2)
-        plt.plot([bx[3][0],bx[0][0]],[bx[3][1],bx[0][1]],'g-',linewidth=2)
+        width = abs(bx[1][0] - bx[0][0])
+        height = abs(bx[3][1] - bx[0][1])
+        newLetter = Letter.Letter([bx[0][0],bx[0][1]],[height,width])
+        AllLetters.append(newLetter)
+    plt.clf()
+    #sort letters
+    AllLetters.sort(key=lambda letter: letter.getY());
+
+    #project the y coordinates of the letters on to
+    # the y axis
+    prjYCoords = []
+    for letter in AllLetters:
+        prjYCoords.append(letter.getY()+letter.getHeight())
+        plt.plot([letter.getX(),letter.getX()+letter.getWidth()],[letter.getY(),letter.getY()],'b-',linewidth=2)
+        plt.plot([letter.getX()+letter.getWidth(),letter.getX()+letter.getWidth()],[letter.getY(),letter.getY()+letter.getHeight()],'b-',linewidth=2)
+        plt.plot([letter.getX()+letter.getWidth(),letter.getX()],[letter.getY()+letter.getHeight(),letter.getY()+letter.getHeight()],'b-',linewidth=2)
+        plt.plot([letter.getX(),letter.getX()],[letter.getY()+letter.getHeight(),letter.getY()],'b-',linewidth=2)
+
+
+    for c in prjYCoords:
+        plt.plot(0,c,'ro');
+
+    #find distances between coordinates
+    coorDists = 
+
+
+
+
+
+    imgplot = plt.imshow(img,'gray')
     plt.show()
     cv2.waitKey(0)
     cv2.destroyAllWindows()

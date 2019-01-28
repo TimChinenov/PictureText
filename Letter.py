@@ -3,7 +3,8 @@
 #of the bounding box in the image that it belongs
 #to
 class Letter:
-    def __init__(self,coords,dims):
+    def __init__(self,coords,dims,number):
+        self.id = number
         self.x = coords[0]
         self.y = coords[1]
         #dimensions in format [height,width]
@@ -15,6 +16,9 @@ class Letter:
         #the two adjacent neighbors of the letter are saved here
         # self.right
         # self.left
+
+    def getID(self):
+        return self.id
 
     def getY(self):
         return self.y

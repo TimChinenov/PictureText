@@ -57,9 +57,30 @@ def findThresh(data):
 
     return thresh,bds[thresh]
 
+def dist(P1,P2):
+    return(np.sqrt((P1[0]-P2[0])**2+(P1[1]-P2[1])**2))
 
-
-
+#function takes two rectangles of corners and combines them into a single
+#rectangle
+def mergeBoxes(c1,c2):
+    newRect = []
+    #find new corner for the top left
+    cx = min(c1[0][0],c2[0][0])
+    cy = min(c1[0][1],c2[0][1])
+    newRect.append([cx,cy])
+    #find new corner for the top right
+    cx = max(c1[1][0],c2[1][0])
+    cy = min(c1[1][1],c2[1][1])
+    newRect.append([cx,cy])
+    #find new corner for bottm right
+    cx = max(c1[2][0],c2[2][0])
+    cy = max(c1[2][1],c2[2][1])
+    newRect.append([cx,cy])
+    #find new corner for bottm left
+    cx = min(c1[3][0],c2[3][0])
+    cy = max(c1[3][1],c2[3][1])
+    newRect.append([cx,cy])
+    return newRect
 
 
 
@@ -67,7 +88,7 @@ if __name__ == "__main__":
     bndingBx = []#holds bounding box of each countour
     corners = []
 
-    img = cv2.imread('linear.png',0) #read image
+    img = cv2.imread('const.png',0) #read image
 
     #perform gaussian blur (5*5)
     blur = cv2.GaussianBlur(img,(5,5),0)
@@ -108,10 +129,69 @@ if __name__ == "__main__":
     #TOO SMALL OF AN AREA (LESS THAN AVG-STD) AND HAVE A CIRCULITY OF SOME RATING
     ##THOUGHT TWO,
     Area = []
-
     for corner in corners:
         Area.append(abs(corner[0][0]-corner[1][0])*abs(corner[0][1]-corner[3][1]))
+    #find average
+    Area = np.asarray(Area)
+    avgArea = np.mean(Area)
+    stdArea = np.std(Area)
+    outlier = (Area < avgArea - stdArea)
+    for num in range(0,len(outlier)):
+        if(outlier[num]):
+            black = np.zeros((len(img),len(img[0])),np.uint8)
+            cv2.rectangle(black,(corners[num][0][0],corners[num][0][1]),(corners[num][2][0],corners[num][2][1]),(255,255),-1)
+            fin =  cv2.bitwise_and(th3,black)
+            tempCnt,tempH = cv2.findContours(fin,cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
+            err = .4
+            for cnt in tempCnt:
+                rect = cv2.minAreaRect(cnt)
+                axis1 = rect[1][0]/2.0
+                axis2 = rect[1][1]/2.0
+                dot = False
+                if(axis1 != 0 and axis2 != 0):
+                    ratio = axis1/axis2
+                    if ratio > 1.0 - err and ratio < err + 1.0:
+                        dot = True
+            #if contour is a dot, we want to connect it to the closest
+            #bounding box that is beneath it
+            bestCorner = corners[num]
+            closest = np.inf
+            for crn in corners:
+                width = abs(crn[0][0]-crn[1][0])
+                height = abs(crn[0][1]-crn[3][1])
+                #check to make sure character is below in position
+                if(corners[num][0][1] > crn[0][1]):
+                    continue #if it's above the dot we don't care
+                #check the distance if it is below the dot
+                elif dist(corners[num][0],crn[0])<closest and crn != corners[num]:
+                    bestCorner = crn
+                    closest = dist(corners[num][0],crn[0])
+                    print closest
+            #modify the coordinates of the pic to include the dot
+            #print(bestCorner)
+            newCorners = mergeBoxes(corners[num],bestCorner)
+            #print(newCorners)
+            corners[num][0][0] = 0
+            corners[num][0][1] = 0
+            corners[num][1][0] = 0
+            corners[num][1][1] = 0
+            corners[num][2][0] = 0
+            corners[num][2][1] = 0
+            corners[num][3][0] = 0
+            corners[num][3][1] = 0
+            #not sure if next two lines are needed
+            #pad = max(len(subImg),len(subImg[0]))
+            #constant= cv2.copyMakeBorder(subImg,pad,pad,pad,pad,cv2.BORDER_CONSTANT,value=0)
+            # if(cv2.isContourConvex(tempCnt)):
+            #         ellipse = cv2.minAreaRect(tempCnt)
+            #constant = cv2.bitwise_not(constant)
+            #ellipse = cv2.minAreaRect(constant)
+            # plt.imshow(constant,'gray')
+            # plt.show()
+            # plt.clf()
 
+            #ellipse.width()
+    plt.clf()
     ###############################################
     # Take letters and turn them into objects
     AllLetters = []
@@ -119,9 +199,17 @@ if __name__ == "__main__":
     for bx in corners:
         width = abs(bx[1][0] - bx[0][0])
         height = abs(bx[3][1] - bx[0][1])
+        if width*height == 0:
+            continue
+        plt.plot([bx[0][0],bx[1][0]],[bx[0][1],bx[1][1]],'g-',linewidth=2)
+        plt.plot([bx[1][0],bx[2][0]],[bx[1][1],bx[2][1]],'g-',linewidth=2)
+        plt.plot([bx[2][0],bx[3][0]],[bx[2][1],bx[3][1]],'g-',linewidth=2)
+        plt.plot([bx[3][0],bx[0][0]],[bx[3][1],bx[0][1]],'g-',linewidth=2)
         newLetter = Letter.Letter([bx[0][0],bx[0][1]],[height,width],counter)
         AllLetters.append(newLetter)
         counter+=1
+    plt.imshow(img,'gray')
+    plt.show()
     plt.clf()
     #sort letters
     AllLetters.sort(key=lambda letter: letter.getY()+letter.getHeight())

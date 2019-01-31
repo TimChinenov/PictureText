@@ -46,3 +46,6 @@ class Letter:
 
     def getLeft(self):
         return self.left
+
+    def getArea(self):
+        return self.dimen[0]*self.dimen[1]
